@@ -1,96 +1,155 @@
 #include <WinSock2.h>
 #include <WS2tcpip.h>
 #include <iostream>
+#include <sstream>
+#include <exception>
+#include "ClienteJogo.h"
 
-#define VERSAO_CLIENTE_ATUAL 2
+
+enum Comandos
+{
+	NUMERO_ULTIMA_VERSAO_CLIENTE_REQ,
+	EXECUTAVEL_ULTIMA_VERSAO_CLIENTE_REQ
+};
+
 
 #define PORTA_SERVIDOR 9000
+
+void receberTcp(const SOCKET& socket,
+	void* buffer,
+	const long& tamanhoBuffer)
+{
+	long bytesRecebidos = 0;
+	long totalBytesRecebidos = 0;
+
+	do
+	{
+
+		// For connection-oriented sockets (type SOCK_STREAM for example), 
+		// calling recv will return as much data as is currently available—up 
+		// to the size of the buffer specified.
+
+		bytesRecebidos = recv(socket,
+			(char*)buffer + totalBytesRecebidos,
+			tamanhoBuffer - totalBytesRecebidos,
+			NULL);
+
+		if (bytesRecebidos == SOCKET_ERROR ||
+			bytesRecebidos == 0)
+		{
+			std::stringstream erro;
+
+			erro << __FUNCTION__
+				<< " - A conexao foi encerrada durante a transmissao de forma inesperada. Codigo: "
+				<< WSAGetLastError()
+				<< std::endl;
+
+			throw std::runtime_error(erro.str());
+		}
+
+		totalBytesRecebidos += bytesRecebidos;
+
+	} while (totalBytesRecebidos != tamanhoBuffer);
+}
+
+
 int main()
 {
-	WSAData wsaData;
-
-	WSAStartup(MAKEWORD(2, 2), &wsaData);
-
-	sockaddr_in enderecoServidor;
-	
-	inet_pton(AF_INET, "0.0.0.0", &enderecoServidor.sin_addr);
-	enderecoServidor.sin_family = AF_INET;
-	enderecoServidor.sin_port = htons(PORTA_SERVIDOR);
-
-	SOCKET principalSocket;
-	principalSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-
-	bind(principalSocket, 
-		(SOCKADDR*) &enderecoServidor, 
-		sizeof(sockaddr_in));
-
-
-	listen(principalSocket, SOMAXCONN);
-
-	SOCKET clienteSocket;
-	sockaddr_in clienteEndereco;
-	int clienteEnderecoTam = sizeof(sockaddr_in);
-	
-	for (;;)
+	try
 	{
-		clienteSocket = accept(principalSocket,
-							   (SOCKADDR*)&clienteEndereco,
-							   &clienteEnderecoTam);
+		ClienteJogo* ultimoCliente = new ClienteJogo();
 
-		
-		int bytesRecebidos = 0; 
-		int totalBytesRecebidos = 0;
-		
-		int versaoCliente;
+		WSAData wsaData;
+		WSAStartup(MAKEWORD(2, 2), &wsaData);
 
-		do
+		sockaddr_in enderecoServidor;
+
+		inet_pton(AF_INET, "0.0.0.0", &enderecoServidor.sin_addr);
+		enderecoServidor.sin_family = AF_INET;
+		enderecoServidor.sin_port = htons(PORTA_SERVIDOR);
+
+		SOCKET principalSocket;
+		principalSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+
+		bind(principalSocket,
+			(SOCKADDR*)&enderecoServidor,
+			sizeof(sockaddr_in));
+
+
+		listen(principalSocket, SOMAXCONN);
+
+		SOCKET clienteSocket;
+		sockaddr_in clienteEndereco;
+		int clienteEnderecoTam = sizeof(sockaddr_in);
+
+		for (;;)
 		{
-			bytesRecebidos = recv(clienteSocket,
-								  (char*)&versaoCliente + totalBytesRecebidos,
-								  sizeof(int) - totalBytesRecebidos,
-								  NULL);
-			
-			if (bytesRecebidos == SOCKET_ERROR ||
-				bytesRecebidos == 0)
+			clienteSocket = accept(principalSocket,
+				(SOCKADDR*)&clienteEndereco,
+				&clienteEnderecoTam);
+
+			for (;;)
 			{
-				std::cout << "Ocorreu um erro ao receber o tamanho do arquivo" << std::endl;
-				exit(1);
+				try
+				{
+					int comando;
+					int ultimaVersaoCliente;
+
+					receberTcp(clienteSocket, &comando, sizeof(int));
+					
+					// TODO: Aplicar Command Pattern
+					switch (comando)
+					{
+					case Comandos::NUMERO_ULTIMA_VERSAO_CLIENTE_REQ:
+
+						ultimaVersaoCliente = ultimoCliente->Versao();
+
+						send(clienteSocket,
+							(char*)&ultimaVersaoCliente,
+							sizeof(int),
+							NULL);
+						break;
+
+
+					case Comandos::EXECUTAVEL_ULTIMA_VERSAO_CLIENTE_REQ:
+
+						const char* executavel = ultimoCliente->Dados();
+						long tamanhoExecutavel = ultimoCliente->Tamanho();
+
+						send(clienteSocket,
+							(char*)&tamanhoExecutavel,
+							sizeof(long),
+							NULL);
+
+						send(clienteSocket,
+							executavel,
+							tamanhoExecutavel,
+							NULL);
+						break;
+					}
+
+				}
+				catch (std::exception& ex)
+				{
+					std::cout << ex.what();
+					break;
+				}
 			}
-				
-			totalBytesRecebidos += bytesRecebidos;
-
-		} while (totalBytesRecebidos != sizeof(int));
-		
-		
-		if (VERSAO_CLIENTE_ATUAL != versaoCliente)
-		{
-			FILE* arq;
-			int e;
-			char path[255];
-			sprintf_s(path, "wowv%d.exe", VERSAO_CLIENTE_ATUAL);
-			e = fopen_s(&arq, path, "r");
-			
-			if (e == 0)
-			{
-				std::cout << "Ocorreu um erro ao abrir o arquivo: " << path << " para leitura.";
-				exit(1);
-			}
-
-			fseek(arq, 0L, SEEK_END);
-			long tamanhoExecCliente = ftell(arq);
-
-
-			send(clienteSocket,
-				(char*)&tamanhoExecCliente, sizeof(long),
-				 NULL);
-
-			
-			
-			fclose(arq);
 		}
+
+		WSACleanup();
+
+		delete ultimoCliente;
+
+	}
+	catch (std::exception& ex)
+	{
+		std::cout << ex.what();
+		system("pause");
+		return 1;
 	}
 
-	WSACleanup();
+	
 
 	return 0;
 }
