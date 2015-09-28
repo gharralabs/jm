@@ -3,6 +3,9 @@
 #include <iostream>
 #include <sstream>
 #include <exception>
+#include <thread>
+#include <future>
+#include <vector>
 #include "ClienteJogo.h"
 
 
@@ -53,6 +56,59 @@ void receberTcp(const SOCKET& socket,
 }
 
 
+void tratarCliente(SOCKET clienteSocket,
+	ClienteJogo* ultimoCliente)
+{
+	for (;;)
+	{
+		try
+		{
+			int comando;
+			int ultimaVersaoCliente;
+
+			receberTcp(clienteSocket, &comando, sizeof(int));
+
+			// TODO: Aplicar Command Pattern
+			switch (comando)
+			{
+			case Comandos::NUMERO_ULTIMA_VERSAO_CLIENTE_REQ:
+
+				ultimaVersaoCliente = ultimoCliente->Versao();
+
+				send(clienteSocket,
+					(char*)&ultimaVersaoCliente,
+					sizeof(int),
+					NULL);
+				break;
+
+
+			case Comandos::EXECUTAVEL_ULTIMA_VERSAO_CLIENTE_REQ:
+
+				// TODO: IMPLEMENTAR LISTA DE ARQUIVOS
+				const char* executavel = ultimoCliente->Dados();
+				long tamanhoExecutavel = ultimoCliente->Tamanho();
+
+				send(clienteSocket,
+					(char*)&tamanhoExecutavel,
+					sizeof(long),
+					NULL);
+
+				send(clienteSocket,
+					executavel,
+					tamanhoExecutavel,
+					NULL);
+				break;
+			}
+
+		}
+		catch (std::exception& ex)
+		{
+			std::cout << ex.what();
+			break;
+		}
+	}
+}
+
 int main()
 {
 	try
@@ -82,60 +138,19 @@ int main()
 		sockaddr_in clienteEndereco;
 		int clienteEnderecoTam = sizeof(sockaddr_in);
 
+		
 		for (;;)
 		{
 			clienteSocket = accept(principalSocket,
 				(SOCKADDR*)&clienteEndereco,
 				&clienteEnderecoTam);
 
-			for (;;)
-			{
-				try
-				{
-					int comando;
-					int ultimaVersaoCliente;
-
-					receberTcp(clienteSocket, &comando, sizeof(int));
-					
-					// TODO: Aplicar Command Pattern
-					switch (comando)
-					{
-					case Comandos::NUMERO_ULTIMA_VERSAO_CLIENTE_REQ:
-
-						ultimaVersaoCliente = ultimoCliente->Versao();
-
-						send(clienteSocket,
-							(char*)&ultimaVersaoCliente,
-							sizeof(int),
-							NULL);
-						break;
-
-
-					case Comandos::EXECUTAVEL_ULTIMA_VERSAO_CLIENTE_REQ:
-
-						const char* executavel = ultimoCliente->Dados();
-						long tamanhoExecutavel = ultimoCliente->Tamanho();
-
-						send(clienteSocket,
-							(char*)&tamanhoExecutavel,
-							sizeof(long),
-							NULL);
-
-						send(clienteSocket,
-							executavel,
-							tamanhoExecutavel,
-							NULL);
-						break;
-					}
-
-				}
-				catch (std::exception& ex)
-				{
-					std::cout << ex.what();
-					break;
-				}
-			}
+			std::async(std::launch::async,
+				tratarCliente,
+				clienteSocket,
+				ultimoCliente);
 		}
+
 
 		WSACleanup();
 
@@ -149,7 +164,7 @@ int main()
 		return 1;
 	}
 
-	
+
 
 	return 0;
 }
