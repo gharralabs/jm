@@ -6,6 +6,7 @@
 #include "VersaoCliente.h"
 
 #define PORTA_SERVIDOR 9000
+#define TRANSFER_BUFFER_SIZE 1000000
 
 enum Comandos
 {
@@ -79,13 +80,13 @@ void receberArquivo(const SOCKET& socket,
 	{
 		long totalBytesRecebidos = 0L;
 		long bytesRecebidos = 0L;
-		char buffer[512];
+		char buffer[TRANSFER_BUFFER_SIZE];
 		long ler;
 		do
 		{
 			bytesRecebidos = recv(socket,
 				buffer,
-				512,
+				TRANSFER_BUFFER_SIZE,
 				NULL);
 
 			if (bytesRecebidos == SOCKET_ERROR ||
@@ -110,6 +111,9 @@ void receberArquivo(const SOCKET& socket,
 				arquivo);
 
 			totalBytesRecebidos += bytesRecebidos;
+
+			std::cout << float(totalBytesRecebidos) / float(tamanhoArquivo) * 100.0f << "%"
+				<< std::endl;
 
 		} while (totalBytesRecebidos != tamanhoArquivo);
 
