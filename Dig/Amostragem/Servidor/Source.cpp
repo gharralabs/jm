@@ -41,7 +41,7 @@ int main()
 	MoverMouseComando mouseComando;
 
 	sockaddr_in enderecoCliente;
-	int tamanhoEnderecoCliente = sizeof(sockaddr_in);
+	int tamanho = sizeof(sockaddr_in);
 
 	std::vector<sockaddr_in> jogadores;
 
@@ -56,7 +56,7 @@ int main()
 				sizeof(comando),
 				NULL,
 				(SOCKADDR*)&enderecoCliente,
-				&tamanhoEnderecoCliente);
+				&tamanho);
 
 			switch (comando.comando)
 			{
@@ -90,7 +90,7 @@ int main()
 				sizeof(mouseComando),
 				NULL,
 				(SOCKADDR*)&enderecoCliente,
-				&tamanhoEnderecoCliente);
+				&tamanho);
 
 			if (enderecoCliente.sin_addr.s_addr == jogadores[0].sin_addr.s_addr &&
 				enderecoCliente.sin_port == jogadores[0].sin_port )
