@@ -11,8 +11,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{49393B6C-E2D5-49D7-B1E5-9BFC54F41FAF}</ProjectGuid>
-    <RootNamespace>DigServer</RootNamespace>
+    <ProjectGuid>{509C37FB-BD80-43AF-99DD-968BB8D29362}</ProjectGuid>
+    <RootNamespace>DigCompartilhado</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -64,10 +64,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Source.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="Grade.h" />
+    <ClInclude Include="ComandosRede.h" />
+    <ClInclude Include="ConfiguraçõesServidor.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
