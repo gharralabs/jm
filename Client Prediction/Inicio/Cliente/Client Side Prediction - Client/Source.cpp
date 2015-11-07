@@ -67,7 +67,7 @@ int main(int ac, char **av)
 	personagem.x = JOGADOR_POSICAO_X_INICIAL;
 	personagem.y = JOGADOR_POSICAO_Y_INICIAL;
 	
-	C2D2_Inicia(LARGURA_TELA, ALTURA_TELA, C2D2_JANELA, C2D2_DESENHO_OPENGL, "Amostragem");
+	C2D2_Inicia(LARGURA_TELA, ALTURA_TELA, C2D2_JANELA, C2D2_DESENHO_OPENGL, "Client Side Prediction");
 	
 	C2D2_Botao *teclado;
 	teclado = C2D2_PegaTeclas();
