@@ -83,15 +83,7 @@
     <ClCompile Include="..\chien2d2\src\chienaudio2.cpp" />
     <ClCompile Include="..\chien2d2\src\chienaudio2lua.cpp" />
     <ClCompile Include="..\chien2d2\src\chienlua2.cpp" />
-    <ClCompile Include="DrawableGameObject.cpp" />
-    <ClCompile Include="GameObject.cpp" />
-    <ClCompile Include="Personagem.cpp" />
     <ClCompile Include="Source.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="DrawableGameObject.h" />
-    <ClInclude Include="GameObject.h" />
-    <ClInclude Include="Personagem.h" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="mario.png" />
